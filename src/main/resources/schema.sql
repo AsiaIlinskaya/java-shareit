@@ -17,10 +17,3 @@ CREATE TABLE IF NOT EXISTS items
     owner_id       integer REFERENCES users(id),
     request_id     integer
     );
-
-
-
-
-
-
-

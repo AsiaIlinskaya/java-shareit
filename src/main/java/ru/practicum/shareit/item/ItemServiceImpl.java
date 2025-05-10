@@ -11,6 +11,7 @@ import ru.practicum.shareit.user.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,22 +23,18 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> findItemsByOwner(long userId) {
-        List<Item> items = itemRepository.findItemsByOwner(userId);
-        List<ItemDto> itemDtos = new ArrayList<>();
-        for (Item item : items) {
-            ItemDto b = ItemMapper.mapToItemDto(item);
-            itemDtos.add(b);
-        }
-        return itemDtos;
+        return itemRepository.findItemsByOwner(userId).stream()
+                .map(ItemMapper::mapToItemDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public ItemDto update(long userId, long itemId, ItemDto itemDto) {
-        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + itemId));
+        Item item = find(itemId);
 
         if (item.getOwner() != userId) {
-            throw new ResourceNotFoundException("Отсутствует user под id");
+            throw new ResourceNotFoundException("Только владелец вещи может вносить изменения");
         }
 
         if (itemDto.getName() != null) {
@@ -55,10 +52,14 @@ public class ItemServiceImpl implements ItemService {
         return ItemMapper.mapToItemDto(item);
     }
 
+    private Item find(long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вещь с ID " + itemId + " не найдена"));
+    }
+
     @Override
     public ItemDto getItemById(long userId, long itemId) {
-        Item item = itemRepository.findById(itemId).orElseThrow(()
-                -> new ResourceNotFoundException("Item not found with ID: " + itemId));
+        Item item = find(itemId);
         return ItemMapper.mapToItemDto(item);
     }
 
@@ -78,9 +79,7 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("Описание не может быть пустым");
         }
 
-        if (userService.getUserById(userId) == null) {
-            throw new ResourceNotFoundException("Отсутствует user под id:");
-        }
+        userService.getUserById(userId);
 
         Item item = ItemMapper.mapToNewItem(itemDto);
         item.setOwner(userId);
