@@ -13,7 +13,7 @@ import java.util.List;
 import static ru.practicum.shareit.item.ItemController.USER_ID;
 
 @RestController
-@RequestMapping(path = "/bookings")
+@RequestMapping("/bookings")
 @RequiredArgsConstructor
 @Slf4j
 public class BookingController {
