@@ -3,12 +3,21 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.comment.CommentMapper;
+import ru.practicum.shareit.comment.CommentRepository;
+import ru.practicum.shareit.comment.CommentService;
+import ru.practicum.shareit.comment.dto.CommentDto;
+import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.exceptions.ResourceNotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.dto.UserDto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +29,8 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final UserService userService;
+    private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
 
     @Override
     public List<ItemDto> findItemsByOwner(long userId) {
@@ -94,5 +105,42 @@ public class ItemServiceImpl implements ItemService {
         }
         List<Item> items = itemRepository.findByDescriptionContainingIgnoreCaseAndAvailableIsTrueOrNameContainingIgnoreCaseAndAvailableIsTrue(searchText, searchText);
         return ItemMapper.mapToItemDto(items);
+    }
+
+    @Override
+    @Transactional
+    public CommentDto addComment(long userId, long itemId, String text) {
+        boolean hasFutureBooking = bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId,
+                BookingStatus.APPROVED, LocalDateTime.now());
+        if (!hasFutureBooking) {
+            throw new ValidationException("User with ID " + userId + " has a future booking for item with ID " + itemId
+                    + ". Cannot add comment until the booking is completed.");
+        }
+
+        if (text.isBlank()) {
+            throw new ValidationException("Comment text cannot be empty");
+        }
+        Item item = itemRepository.findById(itemId).orElseThrow(()
+                -> new ResourceNotFoundException("Item not found with ID: " + itemId));
+
+        UserDto user = userService.getUserById(userId);
+
+        Comment comment = new Comment();
+        comment.setText(text);
+        comment.setItemId(itemId);
+        comment.setAuthorId(userId);
+        commentRepository.save(comment);
+
+        List<Comment> comments = item.getComments();
+        if (comments == null) {
+            comments = new ArrayList<>();
+        }
+        comments.add(comment);
+        item.setComments(comments);
+
+        CommentDto commentDto = CommentMapper.mapToCommentDto(comment);
+        commentDto.setAuthorName(user.getName());
+
+        return commentDto;
     }
 }
