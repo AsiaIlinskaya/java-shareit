@@ -8,7 +8,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.intf.Create;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -42,4 +45,6 @@ public class Item {
     @Column(name = "request_id")
     private long request;
 
+    @OneToMany(mappedBy = "itemId", cascade = CascadeType.ALL)
+    private List<Comment> comments;
 }
