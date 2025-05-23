@@ -1,6 +1,6 @@
 package ru.practicum.shareit.item;
 
-import org.mapstruct.Mapper;
+
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.comment.CommentMapper;
 import ru.practicum.shareit.comment.dto.CommentDto;
@@ -10,7 +10,6 @@ import ru.practicum.shareit.item.model.Item;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mapper
 @Component
 public class ItemMapper {
 

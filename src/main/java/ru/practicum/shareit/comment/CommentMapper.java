@@ -1,6 +1,5 @@
 package ru.practicum.shareit.comment;
 
-import org.mapstruct.Mapper;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.comment.model.Comment;
@@ -8,7 +7,6 @@ import ru.practicum.shareit.comment.model.Comment;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mapper
 @Component
 public class CommentMapper {
     public static CommentDto mapToCommentDto(Comment comment) {
