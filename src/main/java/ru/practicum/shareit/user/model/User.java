@@ -13,7 +13,7 @@ import ru.practicum.shareit.intf.Create;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "users", schema = "public")
+@Table(name = "users")
 public class User {
 
     @Id
