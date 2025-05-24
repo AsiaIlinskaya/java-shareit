@@ -21,7 +21,6 @@ public class User {
     private Long id;
 
     @NotBlank(groups = Create.class, message = "Имя не может быть пустым")
-    @Column(name = "name")
     private String name;
 
     @NotBlank(groups = Create.class, message = "Электронная почта не может быть пустым")
