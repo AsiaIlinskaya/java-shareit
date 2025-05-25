@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.intf.Create;
 import ru.practicum.shareit.intf.Update;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -31,7 +32,7 @@ public class ItemController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto saveItem(@RequestHeader(USER_ID) long userId,
-                            @Validated(Create.class) @RequestBody ItemDto itemDto) {
+                       @Validated(Create.class) @RequestBody ItemDto itemDto) {
         log.info("Добавление предмета у пользователя под id: {}", userId);
         return itemService.saveItem(userId, itemDto);
     }
@@ -56,5 +57,13 @@ public class ItemController {
     public List<ItemDto> searchItems(@RequestParam("text") String searchText) {
         log.info("Поиск всех предметов под text: {}", searchText);
         return itemService.searchItems(searchText);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    @ResponseStatus(HttpStatus.OK)
+    public CommentDto addComment(@RequestHeader(USER_ID) long userId, @PathVariable("itemId") long itemId,
+                                 @RequestBody CommentDto commentDto) {
+        log.info("Добавление комментария к предмету под id: {}", itemId);
+        return itemService.addComment(userId, itemId, commentDto.getText());
     }
 }
