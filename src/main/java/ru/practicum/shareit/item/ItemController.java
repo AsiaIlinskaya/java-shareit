@@ -32,7 +32,7 @@ public class ItemController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto saveItem(@RequestHeader(USER_ID) long userId,
-                       @Validated(Create.class) @RequestBody ItemDto itemDto) {
+                            @Validated(Create.class) @RequestBody ItemDto itemDto) {
         log.info("Добавление предмета у пользователя под id: {}", userId);
         return itemService.saveItem(userId, itemDto);
     }
