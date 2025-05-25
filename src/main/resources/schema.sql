@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS items
     is_available   boolean,
     owner_id       integer REFERENCES users(id),
     request_id     integer
-);
+    );
 
 CREATE TABLE IF NOT EXISTS bookings
 (
@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS bookings
     item_id   integer REFERENCES items(id),
     booker_id  integer REFERENCES users(id),
     status     varchar(255)
-);
+    );
+
+
 
 CREATE TABLE IF NOT EXISTS comments
 (
@@ -32,4 +34,12 @@ CREATE TABLE IF NOT EXISTS comments
     item_id integer REFERENCES items(id),
     author_id   integer REFERENCES users(id),
     created_at TIMESTAMP WITHOUT TIME ZONE
-);
+    );
+
+
+
+
+
+
+
+
