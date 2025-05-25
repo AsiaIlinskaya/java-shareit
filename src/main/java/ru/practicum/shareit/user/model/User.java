@@ -25,5 +25,6 @@ public class User {
 
     @NotBlank(groups = Create.class, message = "Электронная почта не может быть пустым")
     @Email(groups = Create.class, message = "электронная почта не может быть пустой и должна содержать символ @")
+    @Column(name = "email", unique = true)
     private String email;
 }
