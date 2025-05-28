@@ -13,8 +13,10 @@ import ru.practicum.shareit.exceptions.ResourceNotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserService;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserService userService;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<ItemDto> findItemsByOwner(long userId) {
@@ -109,36 +112,45 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentDto addComment(long userId, long itemId, String text) {
-        boolean hasFutureBooking = bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId,
-                BookingStatus.APPROVED, LocalDateTime.now());
-        if (!hasFutureBooking) {
-            throw new ValidationException("User with ID " + userId + " has a future booking for item with ID " + itemId
+        // Проверяем, что пользователь завершил бронирование этого предмета
+        boolean hasCompletedBooking = bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
+                itemId, userId, BookingStatus.APPROVED, LocalDateTime.now());
+
+        if (!hasCompletedBooking) {
+            throw new ValidationException("User with ID " + userId + " has no completed bookings for item with ID " + itemId
                     + ". Cannot add comment until the booking is completed.");
         }
 
         if (text.isBlank()) {
             throw new ValidationException("Comment text cannot be empty");
         }
-        Item item = itemRepository.findById(itemId).orElseThrow(()
-                -> new ResourceNotFoundException("Item not found with ID: " + itemId));
 
-        UserDto user = userService.getUserById(userId);
+        // Получаем полные сущности вместо DTO
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + itemId));
 
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        // Создаем и сохраняем комментарий
         Comment comment = new Comment();
         comment.setText(text);
-        comment.setItemId(itemId);
-        comment.setAuthorId(userId);
-        commentRepository.save(comment);
+        comment.setItem(item);  // Устанавливаем связь с Item
+        comment.setAuthor(author);  // Устанавливаем связь с User
+        comment.setCreatedAt(LocalDateTime.now());
 
-        List<Comment> comments = item.getComments();
-        if (comments == null) {
-            comments = new ArrayList<>();
+        Comment savedComment = commentRepository.save(comment);
+
+        // Добавляем комментарий в список комментариев предмета
+        if (item.getComments() == null) {
+            item.setComments(new ArrayList<>());
         }
-        comments.add(comment);
-        item.setComments(comments);
+        item.getComments().add(savedComment);
+        itemRepository.save(item);  // Обновляем Item
 
-        CommentDto commentDto = CommentMapper.mapToCommentDto(comment);
-        commentDto.setAuthorName(user.getName());
+        // Маппим в DTO
+        CommentDto commentDto = CommentMapper.mapToCommentDto(savedComment);
+        commentDto.setAuthorName(author.getName());  // Устанавливаем имя автора
 
         return commentDto;
     }

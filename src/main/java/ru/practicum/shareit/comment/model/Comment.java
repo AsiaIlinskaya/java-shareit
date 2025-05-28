@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
 
@@ -17,18 +19,17 @@ public class Comment {
     private Long id;
 
     @NotBlank(message = "Текст комментария не может быть пустым")
-    @Column(name = "text")
     private String text;
 
-    @NotNull(message = "ID предмета не может быть пустым")
-    @Column(name = "item_id")
-    private Long itemId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id")
+    private Item item;
 
-    @NotNull(message = "ID автора не может быть пустым")
-    @Column(name = "author_id")
-    private Long authorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id")
+    private User author;
 
-    @NotNull(message = "Дата создания комментария не может быть пустой")
+    @NotNull
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

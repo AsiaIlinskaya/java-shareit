@@ -51,6 +51,7 @@ public class Booking {
 
     @NotNull(groups = Create.class, message = "Статус не может быть пустым")
     @Column(name = "status")
+    @Enumerated(EnumType.STRING)
     private BookingStatus status;
 }
 

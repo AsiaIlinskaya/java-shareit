@@ -45,6 +45,6 @@ public class Item {
     @Column(name = "request_id")
     private long request;
 
-    @OneToMany(mappedBy = "itemId", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments;
 }

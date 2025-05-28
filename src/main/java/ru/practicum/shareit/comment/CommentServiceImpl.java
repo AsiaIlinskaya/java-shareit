@@ -20,7 +20,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with ID: " + commentId));
 
-        Long authorId = comment.getAuthorId();
+        Long authorId = comment.getAuthor().getId();
         return userService.getUserNameById(authorId);
     }
 }
