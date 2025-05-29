@@ -1,8 +1,11 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.comment.CommentMapper;
@@ -29,14 +32,23 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final UserService userService;
+    private final BookingMapper bookingMapper;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
 
     @Override
     public List<ItemDto> findItemsByOwner(long userId) {
-        return itemRepository.findItemsByOwner(userId).stream()
-                .map(ItemMapper::mapToItemDto)
+        List<Item> items = itemRepository.findItemsByOwner(userId);
+        LocalDateTime now = LocalDateTime.now();
+
+        return items.stream()
+                .map(item -> {
+                    ItemDto itemDto = ItemMapper.mapToItemDto(item);
+                    enrichItemWithBookings(itemDto, item.getId(), now);
+                    enrichItemWithComments(itemDto, item.getComments());
+                    return itemDto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -72,7 +84,13 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItemById(long userId, long itemId) {
         Item item = find(itemId);
-        return ItemMapper.mapToItemDto(item);
+        ItemDto itemDto = ItemMapper.mapToItemDto(item);
+        LocalDateTime now = LocalDateTime.now();
+
+        enrichItemWithBookings(itemDto, itemId, now);
+        enrichItemWithComments(itemDto, item.getComments());
+
+        return itemDto;
     }
 
     @Override
@@ -111,7 +129,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentDto addComment(long userId, long itemId, String text) {
-        // Проверяем, что пользователь завершил бронирование этого предмета
         boolean hasCompletedBooking = bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndBefore(
                 itemId, userId, BookingStatus.APPROVED, LocalDateTime.now());
 
@@ -124,33 +141,63 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("Comment text cannot be empty");
         }
 
-        // Получаем полные сущности вместо DTO
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + itemId));
 
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
-        // Создаем и сохраняем комментарий
         Comment comment = new Comment();
         comment.setText(text);
-        comment.setItem(item);  // Устанавливаем связь с Item
-        comment.setAuthor(author);  // Устанавливаем связь с User
+        comment.setItem(item);
+        comment.setAuthor(author);
         comment.setCreatedAt(LocalDateTime.now());
 
         Comment savedComment = commentRepository.save(comment);
 
-        // Добавляем комментарий в список комментариев предмета
         if (item.getComments() == null) {
             item.setComments(new ArrayList<>());
         }
         item.getComments().add(savedComment);
-        itemRepository.save(item);  // Обновляем Item
-
-        // Маппим в DTO
+        itemRepository.save(item);
         CommentDto commentDto = CommentMapper.mapToCommentDto(savedComment);
-        commentDto.setAuthorName(author.getName());  // Устанавливаем имя автора
-
+        commentDto.setAuthorName(author.getName());
         return commentDto;
+    }
+
+    private void enrichItemWithBookings(ItemDto itemDto, long itemId, LocalDateTime now) {
+        Booking lastBooking = bookingRepository
+                .findFirstBookingByItemIdAndStatusAndStartIsBefore(
+                        itemId,
+                        BookingStatus.APPROVED,
+                        now,
+                        Sort.by(Sort.Direction.DESC, "start"));
+
+        if (lastBooking != null) {
+            itemDto.setLastBooking(bookingMapper.mapToBookingDto(lastBooking));
+        }
+
+        Booking nextBooking = bookingRepository
+                .findFirstBookingByItemIdAndStatusAndStartIsAfter(
+                        itemId,
+                        BookingStatus.APPROVED,
+                        now,
+                        Sort.by(Sort.Direction.ASC, "start"));
+
+        if (nextBooking != null) {
+            itemDto.setNextBooking(bookingMapper.mapToBookingDto(nextBooking));
+        }
+    }
+
+    private void enrichItemWithComments(ItemDto itemDto, List<Comment> comments) {
+        if (comments != null) {
+            itemDto.setComments(comments.stream()
+                    .map(comment -> {
+                        CommentDto commentDto = CommentMapper.mapToCommentDto(comment);
+                        commentDto.setAuthorName(comment.getAuthor().getName());
+                        return commentDto;
+                    })
+                    .collect(Collectors.toList()));
+        }
     }
 }

@@ -6,10 +6,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.exceptions.ResourceNotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,93 +26,70 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository repository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final BookingMapper bookingMapper;
 
     @Override
     @Transactional
-    public Booking setBookingApproval(long userId, long bookingId, boolean approved) {
-        Booking booking = repository.findById(bookingId).orElseThrow(()
-                -> new ResourceNotFoundException("Booking with ID " + bookingId + " is not found."));
-
+    public BookingDto setBookingApproval(long userId, long bookingId, boolean approved) {
+        Booking booking = getBookingById(bookingId);
         if (booking.getItem().getOwner() != userId) {
             throw new ValidationException("User with ID " + userId + " is not the owner of the item.");
         }
 
-        if (booking.getStatus() == BookingStatus.APPROVED) {
-            throw new ValidationException("Booking with ID " + bookingId + " has already been approved.");
+        if (booking.getStatus() != BookingStatus.WAITING) {
+            throw new ValidationException("Booking with ID " + bookingId +
+                    " cannot be modified because it's not in WAITING status.");
         }
 
-        if (approved) {
-            booking.setStatus(BookingStatus.APPROVED);
-        } else {
-            booking.setStatus(BookingStatus.REJECTED);
-        }
-
-        return booking;
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+        return bookingMapper.mapToBookingDto(booking);
     }
 
     @Override
     @Transactional
-    public Booking createBooking(long userId, BookingDto bookingDto) {
-        if (bookingDto.getStart() == null) {
-            throw new ValidationException("Booking start time cannot be null");
-        }
+    public BookingDto createBooking(long userId, BookingRequestDto bookingRequestDto) {
+        User booker = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
-        if (bookingDto.getEnd() == null) {
-            throw new ValidationException("Booking end time cannot be null");
-        }
+        Item item = itemRepository.findById(bookingRequestDto.getItemId())
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID: " + bookingRequestDto.getItemId()));
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with ID: " + userId);
-        }
-
-        if (!itemRepository.existsById(bookingDto.getItemId())) {
-            throw new ResourceNotFoundException("Item not found with ID: " + userId);
-        }
-
-        if (itemRepository.getById(bookingDto.getItemId()).getAvailable() == false) {
+        if (!item.getAvailable()) {
             throw new ValidationException("The item is not available for booking.");
         }
 
-        if (bookingDto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Booking start time cannot be in the past");
+        if (bookingRequestDto.getStart().isAfter(bookingRequestDto.getEnd())) {
+            throw new ValidationException("Booking start time cannot be after end time");
         }
 
-        if (bookingDto.getEnd().isBefore(bookingDto.getStart())) {
-            throw new ValidationException("Booking end time cannot be before booking start time");
-        }
-
-        if (bookingDto.getStart().isEqual(bookingDto.getEnd())) {
+        if (bookingRequestDto.getStart().isEqual(bookingRequestDto.getEnd())) {
             throw new ValidationException("Booking start time cannot be equal to booking end time");
         }
 
-        long ownerId = itemRepository.getReferenceById(bookingDto.getItemId()).getOwner();
-        if (userId == ownerId) {
+        if (userId == item.getOwner()) {
             throw new ResourceNotFoundException("User cannot book own item");
         }
 
         Booking booking = new Booking();
-        booking.setStart(bookingDto.getStart());
-        booking.setEnd(bookingDto.getEnd());
-        booking.setBooker(userRepository.getReferenceById(userId));
-        booking.setItem(itemRepository.getReferenceById(bookingDto.getItemId()));
+        booking.setStart(bookingRequestDto.getStart());
+        booking.setEnd(bookingRequestDto.getEnd());
+        booking.setItem(item);
+        booking.setBooker(booker);
         booking.setStatus(BookingStatus.WAITING);
-        repository.save(booking);
-        return booking;
+
+        Booking savedBooking = repository.save(booking);
+        return bookingMapper.mapToBookingDto(savedBooking);
     }
 
     @Override
-    public Booking getBookingByIdAndBookerOrOwner(long bookingId, long userId) {
+    public BookingDto getBookingByIdAndBookerOrOwner(long bookingId, long userId) {
         Booking booking = getBookingById(bookingId);
 
-        if (booking.getItem().getOwner() == userId) {
-            return booking;
+        if (!repository.existsByIdAndBookerIdOrItemOwner(bookingId, userId, userId)) {
+            throw new ResourceNotFoundException("Booking not found for user with ID: " + userId);
         }
 
-        if (booking.getBooker().getId() == userId) {
-            return booking;
-        }
-
-        throw new ResourceNotFoundException("Booking not found for user with ID: " + userId);
+        return bookingMapper.mapToBookingDto(booking);
     }
 
     @Override
@@ -119,17 +99,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> findBookingsByBookerId(long userId) {
+    public List<BookingDto> findBookingsByBookerId(long userId) {
         List<Booking> bookings = repository.findBookingsByBookerIdOrderByStartDesc(userId);
 
         if (bookings.isEmpty()) {
             throw new ResourceNotFoundException("Booking not found with Booker ID: " + userId);
         }
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByStateAndOwnerId(long userId, String state) {
+    public List<BookingDto> findBookingsByStateAndOwnerId(long userId, String state) {
         if (!existsBookingByBookerIdOrItemOwner(userId, userId)) {
             throw new ResourceNotFoundException("No bookings found for user with ID: " + userId);
         }
@@ -163,24 +143,24 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private List<Booking> findPastBookingsByOwnerId(long userId) {
+    private List<BookingDto> findPastBookingsByOwnerId(long userId) {
         return repository.findBookingsByItemOwnerAndEndBeforeOrderByEndDesc(userId, LocalDateTime.now());
     }
 
-    private List<Booking> findPastBookingsByBookerId(long userId) {
+    private List<BookingDto> findPastBookingsByBookerId(long userId) {
         return repository.findBookingsByBookerIdAndEndBeforeOrderByEndDesc(userId, LocalDateTime.now());
     }
 
-    private List<Booking> findCurrentBookingsByOwnerId(long userId) {
+    private List<BookingDto> findCurrentBookingsByOwnerId(long userId) {
         return repository.findBookingsByItemOwnerAndStartBeforeAndEndAfter(userId, LocalDateTime.now(), LocalDateTime.now());
     }
 
-    private List<Booking> findCurrentBookingsByBookerId(long userId) {
+    private List<BookingDto> findCurrentBookingsByBookerId(long userId) {
         return repository.findBookingsByBookerIdAndStartBeforeAndEndAfter(userId, LocalDateTime.now(), LocalDateTime.now());
     }
 
     @Override
-    public List<Booking> findBookingsByStateAndBookerId(long userId, String state) {
+    public List<BookingDto> findBookingsByStateAndBookerId(long userId, String state) {
         if (state != null) {
             switch (state) {
                 case "ALL":
@@ -216,48 +196,48 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<Booking> findBookingsByItemOwner(long userId) {
+    public List<BookingDto> findBookingsByItemOwner(long userId) {
         List<Booking> bookings = repository.findBookingsByItemOwner(userId,
                 Sort.by(Sort.Direction.DESC, "start"));
         if (bookings.isEmpty()) {
             throw new ResourceNotFoundException("Booking not found with Owner ID: " + userId);
         }
 
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByBookerIdOrItemOwner(long bookerId, long ownerId) {
+    public List<BookingDto> findBookingsByBookerIdOrItemOwner(long bookerId, long ownerId) {
         List<Booking> bookings = repository.findBookingsByBookerIdOrItemOwner(bookerId, ownerId,
                 Sort.by(Sort.Direction.DESC, "start"));
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByBookerIdAndStatusWaiting(long userId) {
+    public List<BookingDto> findBookingsByBookerIdAndStatusWaiting(long userId) {
         List<Booking> bookings = repository.findBookingsByBookerIdAndStatus(userId, BookingStatus.WAITING,
                 Sort.by(Sort.Direction.DESC, "start"));
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByItemOwnerAndStatusWaiting(long userId) {
+    public List<BookingDto> findBookingsByItemOwnerAndStatusWaiting(long userId) {
         List<Booking> bookings = repository.findBookingsByItemOwnerAndStatus(userId, BookingStatus.WAITING,
                 Sort.by(Sort.Direction.DESC, "start"));
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByItemOwnerAndStatusRejected(long userId) {
+    public List<BookingDto> findBookingsByItemOwnerAndStatusRejected(long userId) {
         List<Booking> bookings = repository.findBookingsByItemOwnerAndStatus(userId, BookingStatus.REJECTED,
                 Sort.by(Sort.Direction.DESC, "start"));
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 
     @Override
-    public List<Booking> findBookingsByBookerIdAndStatusRejected(long userId) {
+    public List<BookingDto> findBookingsByBookerIdAndStatusRejected(long userId) {
         List<Booking> bookings = repository.findBookingsByBookerIdAndStatus(userId, BookingStatus.REJECTED,
                 Sort.by(Sort.Direction.DESC, "start"));
-        return bookings;
+        return bookingMapper.mapToBookingDtoList(bookings);
     }
 }
