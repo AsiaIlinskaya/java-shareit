@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ru.practicum.shareit.booking.dto.BookingDto;
 
 import java.time.LocalDateTime;
@@ -39,6 +41,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<BookingDto> findBookingsByItemOwnerAndEndBeforeOrderByEndDesc(long userId, LocalDateTime now);
 
     List<BookingDto> findBookingsByBookerIdAndEndBeforeOrderByEndDesc(long userId, LocalDateTime now);
+
+    @Query("SELECT b FROM Booking b " +
+            "WHERE b.item.id IN :itemIds " +
+            "AND b.status = ru.practicum.shareit.booking.BookingStatus.APPROVED " +
+            "ORDER BY b.start ASC")
+    List<Booking> findApprovedBookingsForItems(@Param("itemIds") List<Long> itemIds);
 }
 
 

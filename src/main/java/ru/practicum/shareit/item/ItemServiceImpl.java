@@ -23,8 +23,7 @@ import ru.practicum.shareit.user.UserService;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,16 +43,22 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> findItemsByOwner(long userId) {
         List<Item> items = itemRepository.findItemsByOwner(userId);
+        List<Long> itemIds = items.stream().map(Item::getId).collect(Collectors.toList());
+        List<Booking> bookings = bookingRepository.findApprovedBookingsForItems(itemIds);
+        Map<Long, List<Booking>> bookingsByItem = bookings.stream()
+                .collect(Collectors.groupingBy(b -> b.getItem().getId()));
+
         return items.stream()
                 .map(item -> {
                     ItemDto itemDto = ItemMapper.mapToItemDto(item);
-                    itemDto.setNextBooking(findNextBookingByItemId(item.getId()));
-                    itemDto.setLastBooking(findLastBookingByItemId(item.getId()));
+                    List<Booking> itemBookings = bookingsByItem.getOrDefault(item.getId(), Collections.emptyList());
+                    setLastAndNextBooking(itemDto, itemBookings);
                     enrichItemWithComments(itemDto, item.getComments());
                     return itemDto;
                 })
                 .collect(Collectors.toList());
     }
+
 
     @Override
     @Transactional
@@ -217,5 +222,22 @@ public class ItemServiceImpl implements ItemService {
                 BookingStatus.APPROVED, LocalDateTime.now(), Sort.by(Sort.Direction.ASC, "start"));
         BookingDto nextBookingsDTO = bookingMapper.mapToBookingDto(nextBookings);
         return nextBookingsDTO;
+    }
+
+    private void setLastAndNextBooking(ItemDto itemDto, List<Booking> bookings) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Booking lastBooking = bookings.stream()
+                .filter(b -> b.getStart().isBefore(now))
+                .max(Comparator.comparing(Booking::getStart))
+                .orElse(null);
+
+        Booking nextBooking = bookings.stream()
+                .filter(b -> b.getStart().isAfter(now))
+                .min(Comparator.comparing(Booking::getStart))
+                .orElse(null);
+
+        itemDto.setLastBooking(lastBooking != null ? bookingMapper.mapToBookingDto(lastBooking) : null);
+        itemDto.setNextBooking(nextBooking != null ? bookingMapper.mapToBookingDto(nextBooking) : null);
     }
 }
