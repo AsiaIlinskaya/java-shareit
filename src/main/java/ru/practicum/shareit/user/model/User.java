@@ -13,7 +13,7 @@ import ru.practicum.shareit.intf.Create;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "users", schema = "public")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -21,7 +21,6 @@ public class User {
     private Long id;
 
     @NotBlank(groups = Create.class, message = "Имя не может быть пустым")
-    @Column(name = "name")
     private String name;
 
     @NotBlank(groups = Create.class, message = "Электронная почта не может быть пустым")
