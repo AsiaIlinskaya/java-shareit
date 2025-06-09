@@ -12,51 +12,47 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 @Component
 public class ItemRequestMapper {
-
-    private static ItemRepository itemRepository = null;
+    private final ItemRepository itemRepository;
 
     public ItemRequestMapper(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
     }
 
-    public static ItemRequestDto mapToItemRequestDto(ItemRequest itemRequest) {
+    public ItemRequestDto mapToItemRequestDto(ItemRequest itemRequest) {
         if (itemRequest == null) {
             return null;
         }
 
-        List<ItemDto> itemDtos = itemRequest.getItems() != null
+        List<ItemDto> itemDtos = itemRequest.getId() != null
                 ? ItemMapper.mapToItemDto(itemRepository.findByRequestId_Id(itemRequest.getId()))
                 : Collections.emptyList();
 
-        ItemRequestDto itemRequestDto = ItemRequestDto.builder()
+        return ItemRequestDto.builder()
                 .id(itemRequest.getId())
                 .description(itemRequest.getDescription())
                 .requestor(itemRequest.getRequestor())
                 .created(itemRequest.getCreated())
                 .items(itemDtos)
                 .build();
-
-        return itemRequestDto;
     }
 
-    public static List<ItemRequestDto> mapToItemDto(List<ItemRequest> itemRequests) {
+    public List<ItemRequestDto> mapToItemRequestDtoList(List<ItemRequest> itemRequests) {
         List<ItemRequestDto> result = new ArrayList<>();
-
         for (ItemRequest itemRequest : itemRequests) {
-            result.add(mapToItemRequestDto(itemRequest));
+            result.add(this.mapToItemRequestDto(itemRequest));
         }
-
         return result;
     }
 
-    public static ItemRequest mapToNewItem(ItemRequestDto itemRequestDto) {
+    public ItemRequest mapToItemRequest(ItemRequestDto itemRequestDto) {
         ItemRequest itemRequest = new ItemRequest();
         itemRequest.setDescription(itemRequestDto.getDescription());
-        itemRequest.setRequestor(itemRequest.getRequestor());
-        itemRequest.setCreated(Timestamp.valueOf(LocalDateTime.now()));
+        itemRequest.setRequestor(itemRequestDto.getRequestor());
+        itemRequest.setCreated(itemRequestDto.getCreated() != null
+                ? itemRequestDto.getCreated()
+                : Timestamp.valueOf(LocalDateTime.now()));
         return itemRequest;
     }
 }

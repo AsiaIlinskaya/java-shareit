@@ -23,7 +23,7 @@ public class ItemRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @NotBlank(groups = Create.class, message = "Описание не может быть пустым")
     @Column(name = "description")

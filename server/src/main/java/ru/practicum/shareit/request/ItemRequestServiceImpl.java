@@ -40,14 +40,12 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new ValidationException("Описание не может быть пустым");
         }
 
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setDescription(itemRequestDto.getDescription());
+        ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto);
         itemRequest.setRequestor(userId);
         itemRequest.setCreated(Timestamp.valueOf(LocalDateTime.now()));
 
         ItemRequest savedRequest = repository.save(itemRequest);
-
-        return ItemRequestMapper.mapToItemRequestDto(savedRequest);
+        return itemRequestMapper.mapToItemRequestDto(savedRequest);
     }
 
     @Override
@@ -60,13 +58,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new ValidationException("Некорректные параметры пагинации");
         }
 
-        Pageable pageable = PageRequest.of(from, size, Sort.by(Sort.Direction.DESC, "created"));
-
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "created"));
         Page<ItemRequest> page = repository.findItemRequestsByRequestorNot(userId, pageable);
 
-        List<ItemRequest> requests = page.getContent();
-
-        return ItemRequestMapper.mapToItemDto(requests);
+        return itemRequestMapper.mapToItemRequestDtoList(page.getContent());
     }
 
     @Override
@@ -75,12 +70,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new ResourceNotFoundException("Отсутствует user под id:");
         }
 
-        List<ItemRequest> request = repository.findItemRequestsByRequestor(userId);
-        if (request.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        return ItemRequestMapper.mapToItemDto(request);
+        List<ItemRequest> requests = repository.findItemRequestsByRequestor(userId);
+        return requests.isEmpty()
+                ? new ArrayList<>()
+                : itemRequestMapper.mapToItemRequestDtoList(requests);
     }
 
     @Override
@@ -89,16 +82,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new ResourceNotFoundException("User with ID " + userId + " not found.");
         }
 
-        ItemRequest itemRequest = repository.findItemRequestById(requestId);
-        if (itemRequest == null) {
-            throw new ResourceNotFoundException("Item request with ID " + requestId + " not found.");
-        }
+        ItemRequest itemRequest = repository.findItemRequestById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item request with ID " + requestId + " not found."));
 
-        if (repository.findItemRequestByIdAndRequestor(requestId, userId) == null) {
-            return ItemRequestMapper.mapToItemRequestDto(itemRequest);
-        }
-
-        return ItemRequestMapper.mapToItemRequestDto(repository.findItemRequestByIdAndRequestor(requestId, userId));
+        return itemRequestMapper.mapToItemRequestDto(itemRequest);
     }
-
 }
