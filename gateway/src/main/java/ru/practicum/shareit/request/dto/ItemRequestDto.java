@@ -25,7 +25,7 @@ public class ItemRequestDto {
     private String description;
 
     @NotNull(groups = Create.class, message = "Requestor не может быть равен null")
-    private long requestor;
+    private long request;
 
     private Timestamp created;
 

@@ -28,6 +28,10 @@ public class ItemMapper {
             List<CommentDto> commentDtos = CommentMapper.mapToCommentDto(item.getComments());
             itemDto.setComments(commentDtos);
         }
+
+        if (item.getRequestId() != null) {
+            itemDto.setRequestId(item.getRequestId().getRequestor());
+        }
         return itemDto;
     }
 
@@ -41,13 +45,25 @@ public class ItemMapper {
         return result;
     }
 
+    public static List<Item> mapToItemDto(List<ItemDto> items) {
+        List<Item> result = new ArrayList<>();
+        if (items.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        for (ItemDto item : items) {
+            result.add(mapToNewItem(item));
+        }
+
+        return result;
+    }
+
     public static Item mapToNewItem(ItemDto itemDto) {
         Item item = new Item();
         item.setName(itemDto.getName());
         item.setDescription(itemDto.getDescription());
         item.setAvailable(itemDto.getAvailable());
         item.setOwner(0);
-        item.setRequest(0);
         return item;
     }
 }

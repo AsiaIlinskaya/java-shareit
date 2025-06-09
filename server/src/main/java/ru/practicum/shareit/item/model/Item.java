@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.intf.Create;
+import ru.practicum.shareit.request.model.ItemRequest;
 
 import java.util.List;
 
@@ -33,18 +33,17 @@ public class Item {
     @Column(name = "description")
     private String description;
 
-    @NotNull(groups = Create.class, message = "Не может быть пустым")
+    @NotNull(groups = Create.class, message = "Доступ не может быть равен null")
     @Column(name = "is_available")
     private Boolean available;
 
-    @JsonIgnore
     @Column(name = "owner_id")
     private long owner;
 
-    @JsonIgnore
-    @Column(name = "request_id")
-    private long request;
+    @ManyToOne
+    @JoinColumn(name = "requestId")
+    private ItemRequest requestId;
 
-    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL)
     private List<Comment> comments;
 }
