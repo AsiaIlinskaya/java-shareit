@@ -144,12 +144,14 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = ItemMapper.mapToNewItem(itemDto);
         item.setOwner(userId);
+        item = itemRepository.save(item);
 
         if (itemDto.getRequestId() != 0) {
-            ItemRequest request = itemRequestRepository.findItemRequestById(itemDto.getRequestId());
+            ItemRequest request = itemRequestRepository.findById(itemDto.getRequestId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
             item.setRequestId(request);
+            request.getItems().add(item); // добавляем предмет в запрос
         }
-        item = itemRepository.save(item);
 
         ItemDto dto = ItemMapper.mapToItemDto(item);
         dto.setNextBooking(findNextBookingByItemId(item.getId()));
@@ -164,6 +166,12 @@ public class ItemServiceImpl implements ItemService {
             return new ArrayList<>();
         }
         List<Item> items = itemRepository.findByDescriptionContainingIgnoreCaseAndAvailableIsTrueOrNameContainingIgnoreCaseAndAvailableIsTrue(searchText, searchText);
+        return ItemMapper.mapToItemDto(items);
+    }
+
+
+    public List<ItemDto> findItemsByRequestId(long requestId) {
+        List<Item> items = itemRepository.findByRequestId_Id(requestId);
         return ItemMapper.mapToItemDto(items);
     }
 
