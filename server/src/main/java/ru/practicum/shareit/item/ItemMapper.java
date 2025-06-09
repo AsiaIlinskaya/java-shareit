@@ -17,6 +17,7 @@ public class ItemMapper {
             return null;
         }
 
+
         ItemDto itemDto = ItemDto.builder()
                 .id(item.getId())
                 .name(item.getName())
@@ -29,6 +30,9 @@ public class ItemMapper {
             itemDto.setComments(commentDtos);
         }
 
+        if (item.getRequestId() != null) {
+            itemDto.setRequestId(item.getRequestId().getId());
+        }
         if (item.getRequestId() != null) {
             itemDto.setRequestId(item.getRequestId().getRequestor());
         }

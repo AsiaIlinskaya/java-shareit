@@ -18,6 +18,8 @@ import ru.practicum.shareit.exceptions.ResourceNotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserService;
 import ru.practicum.shareit.user.model.User;
@@ -37,6 +39,7 @@ public class ItemServiceImpl implements ItemService {
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
     private final CommentService commentService;
+    private final ItemRequestRepository itemRequestRepository;
 
     private final UserRepository userRepository;
 
@@ -141,6 +144,11 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = ItemMapper.mapToNewItem(itemDto);
         item.setOwner(userId);
+
+        if (itemDto.getRequestId() != 0) {
+            ItemRequest request = itemRequestRepository.findItemRequestById(itemDto.getRequestId());
+            item.setRequestId(request);
+        }
         item = itemRepository.save(item);
 
         ItemDto dto = ItemMapper.mapToItemDto(item);

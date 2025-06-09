@@ -41,7 +41,7 @@ public class Item {
     private long owner;
 
     @ManyToOne
-    @JoinColumn(name = "requestId")
+    @JoinColumn(name = "request_id")
     private ItemRequest requestId;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL)

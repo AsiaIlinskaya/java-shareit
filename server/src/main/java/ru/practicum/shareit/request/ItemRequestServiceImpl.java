@@ -10,7 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.ResourceNotFoundException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemService;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.UserService;
@@ -25,7 +27,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     private final UserService userService;
     private final ItemRequestRepository repository;
-    private final ItemService itemService;
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional
@@ -41,7 +43,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
         ItemRequest itemRequest = ItemRequestMapper.mapToNewItem(itemRequestDto);
         itemRequest.setRequestor(userId);
-        itemRequest.setItems(ItemMapper.mapToItemDto(itemService.findItemsByOwner(userId)));
         ItemRequest item = repository.save(itemRequest);
         ItemRequestDto dto = ItemRequestMapper.mapToItemRequestDto(item);
         return dto;
@@ -94,6 +95,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         if (repository.findItemRequestByIdAndRequestor(requestId, userId) == null) {
             return ItemRequestMapper.mapToItemRequestDto(itemRequest);
         }
+
+        List<Item> items = itemRepository.findByRequestId(requestId);
+        itemRequest.setItems(items);
 
         return ItemRequestMapper.mapToItemRequestDto(repository.findItemRequestByIdAndRequestor(requestId, userId));
     }
