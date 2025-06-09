@@ -13,7 +13,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             String description, String name
     );
 
-    List<Item> findByRequestId(Long requestId);
+    List<Item> findByRequest_Id(Long requestId);
 
 
 }

@@ -94,7 +94,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             return ItemRequestMapper.mapToItemRequestDto(itemRequest);
         }
 
-        List<Item> items = itemRepository.findByRequestId(requestId);
+        List<Item> items = itemRepository.findByRequest_Id(requestId);
         itemRequest.setItems(items);
 
         return ItemRequestMapper.mapToItemRequestDto(repository.findItemRequestByIdAndRequestor(requestId, userId));
