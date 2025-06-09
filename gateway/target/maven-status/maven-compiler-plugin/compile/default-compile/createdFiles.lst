@@ -1,0 +1,5 @@
+ru\practicum\shareit\booking\dto\BookingState.class
+ru\practicum\shareit\client\BaseClient.class
+ru\practicum\shareit\booking\BookingClient.class
+ru\practicum\shareit\ShareItGateway.class
+ru\practicum\shareit\booking\dto\BookItemRequestDto.class
