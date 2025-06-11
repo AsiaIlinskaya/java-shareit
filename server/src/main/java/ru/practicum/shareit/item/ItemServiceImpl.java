@@ -134,7 +134,7 @@ public class ItemServiceImpl implements ItemService {
 
         if (itemDto.getRequestId() != 0) {
             ItemRequest request = itemRequestRepository.findById(itemDto.getRequestId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Request not found with id: "+itemDto.getRequestId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found with id: " + itemDto.getRequestId()));
             item.setRequestId(request);
             request.getItems().add(item);
         }
