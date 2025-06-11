@@ -29,6 +29,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     @Transactional
     public ItemRequestDto saveRequest(long userId, ItemRequestDto itemRequestDto) {
+        userService.getUserById(userId);
         ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto);
         itemRequest.setRequestor(userId);
         itemRequest.setCreated(Timestamp.valueOf(LocalDateTime.now()));
@@ -39,6 +40,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> getAllRequests(long userId, int from, int size) {
+        userService.getUserById(userId);
         Pageable pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "created"));
         Page<ItemRequest> page = repository.findItemRequestsByRequestorNot(userId, pageable);
         return itemRequestMapper.mapToItemRequestDtoList(page.getContent());
@@ -46,6 +48,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public List<ItemRequestDto> findItemRequestsById(long userId) {
+        userService.getUserById(userId);
         List<ItemRequest> requests = repository.findItemRequestsByRequestor(userId);
         return requests.isEmpty()
                 ? new ArrayList<>()
@@ -54,6 +57,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestDto getRequestById(long requestId, long userId) {
+        userService.getUserById(userId);
         ItemRequest itemRequest = repository.findItemRequestById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item request with ID " + requestId + " not found."));
 
