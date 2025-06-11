@@ -27,10 +27,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto saveUser(UserDto userDto) {
-        if (repository.existsByEmail(userDto.getName())) {
-            throw new ConflictException("Пользователь с именем " + userDto.getName() + " уже существует");
-        }
-
         User user = repository.save(UserMapper.mapToNewUser(userDto));
         return UserMapper.mapToUserDto(user);
     }
@@ -72,9 +68,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUserById(long userId) {
-        if (userId < 1) {
-            throw new ValidationException("Id не может быть отрицательным");
-        }
         repository.deleteUserById(userId);
     }
 }

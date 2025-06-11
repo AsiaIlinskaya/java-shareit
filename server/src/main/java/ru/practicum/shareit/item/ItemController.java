@@ -32,7 +32,7 @@ public class ItemController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto saveItem(@RequestHeader(USER_ID) long userId,
-                            @Validated(Create.class) @RequestBody ItemDto itemDto) {
+                            @RequestBody ItemDto itemDto) {
         log.info("Добавление предмета у пользователя под id: {}", userId);
         return itemService.saveItem(userId, itemDto);
     }
@@ -40,7 +40,7 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
     public ItemDto update(@RequestHeader(USER_ID) long userId, @PathVariable("itemId") long itemId,
-                          @Validated(Update.class) @RequestBody ItemDto itemDto) {
+                          @RequestBody ItemDto itemDto) {
         log.info("Обновление предмета у пользователя под id: {}", userId);
         return itemService.update(userId, itemId, itemDto);
     }

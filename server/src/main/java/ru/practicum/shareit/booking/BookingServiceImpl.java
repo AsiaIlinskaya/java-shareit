@@ -58,14 +58,6 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("The item is not available for booking.");
         }
 
-        if (bookingRequestDto.getStart().isAfter(bookingRequestDto.getEnd())) {
-            throw new ValidationException("Booking start time cannot be after end time");
-        }
-
-        if (bookingRequestDto.getStart().isEqual(bookingRequestDto.getEnd())) {
-            throw new ValidationException("Booking start time cannot be equal to booking end time");
-        }
-
         if (userId == item.getOwner()) {
             throw new ResourceNotFoundException("User cannot book own item");
         }

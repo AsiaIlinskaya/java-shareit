@@ -20,7 +20,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto saveUser(@Validated(Create.class) @RequestBody UserDto userDto) {
+    public UserDto saveUser(@RequestBody UserDto userDto) {
         log.info("Received request to save new user");
         return userService.saveUser(userDto);
     }

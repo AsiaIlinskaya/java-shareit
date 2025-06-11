@@ -23,7 +23,7 @@ public class BookingController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BookingDto createBooking(@RequestHeader(USER_ID) long userId,
-                                    @RequestBody @Validated(Create.class) BookingRequestDto bookingDto) {
+                                    @RequestBody BookingRequestDto bookingDto) {
         log.info("Received request to save new booking for user with ID: {}", userId);
         return bookingService.createBooking(userId, bookingDto);
     }

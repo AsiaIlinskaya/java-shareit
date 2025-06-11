@@ -127,30 +127,16 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto saveItem(long userId, ItemDto itemDto) {
-
-        if (userId < 1) {
-            throw new ValidationException("Id не может быть отрицательным");
-        }
-
-        if (itemDto.getName() == null) {
-            throw new ValidationException("Имя не может быть пустым");
-        }
-
-        if (itemDto.getDescription() == null) {
-            throw new ValidationException("Описание не может быть пустым");
-        }
-
         userService.getUserById(userId);
-
         Item item = ItemMapper.mapToNewItem(itemDto);
         item.setOwner(userId);
         item = itemRepository.save(item);
 
         if (itemDto.getRequestId() != 0) {
             ItemRequest request = itemRequestRepository.findById(itemDto.getRequestId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found with id: "+itemDto.getRequestId()));
             item.setRequestId(request);
-            request.getItems().add(item); // добавляем предмет в запрос
+            request.getItems().add(item);
         }
 
         ItemDto dto = ItemMapper.mapToItemDto(item);
@@ -184,10 +170,6 @@ public class ItemServiceImpl implements ItemService {
         if (!hasCompletedBooking) {
             throw new ValidationException("User with ID " + userId + " has no completed bookings for item with ID " + itemId
                     + ". Cannot add comment until the booking is completed.");
-        }
-
-        if (text.isBlank()) {
-            throw new ValidationException("Comment text cannot be empty");
         }
 
         Item item = itemRepository.findById(itemId)
