@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.client.BaseClient;
 import ru.practicum.shareit.comment.CommentDto;
+import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 @Service
@@ -27,6 +28,17 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> saveItem(long userId, ItemDto itemDto) {
+        if (userId < 1) {
+            throw new ValidationException("Id не может быть отрицательным");
+        }
+
+        if (itemDto.getName() == null) {
+            throw new ValidationException("Имя не может быть пустым");
+        }
+
+        if (itemDto.getDescription() == null) {
+            throw new ValidationException("Описание не может быть пустым");
+        }
         return post("", userId, itemDto);
     }
 
@@ -51,6 +63,10 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> addCommentToItem(long userId, Long itemId, CommentDto commentDto) {
+        if (commentDto.getText().isBlank()) {
+            throw new ValidationException("Comment text cannot be empty");
+        }
+
         return post("/" + itemId + "/comment", userId, commentDto);
     }
 }

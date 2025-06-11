@@ -16,6 +16,7 @@ import ru.practicum.shareit.user.dto.UserDto;
 @Slf4j
 @Validated
 public class UserController {
+
     private final UserClient userClient;
 
     @PostMapping

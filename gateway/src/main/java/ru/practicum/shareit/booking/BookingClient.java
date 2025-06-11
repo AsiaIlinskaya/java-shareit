@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.booking.dto.BookItemRequestDto;
 import ru.practicum.shareit.client.BaseClient;
+import ru.practicum.shareit.exceptions.ValidationException;
 
 @Service
 public class BookingClient extends BaseClient {
@@ -35,6 +36,13 @@ public class BookingClient extends BaseClient {
     }
 
     public ResponseEntity<Object> bookItem(long userId, BookItemRequestDto requestDto) {
+        if (requestDto.getStart().isAfter(requestDto.getEnd())) {
+            throw new ValidationException("Booking start time cannot be after end time");
+        }
+
+        if (requestDto.getStart().isEqual(requestDto.getEnd())) {
+            throw new ValidationException("Booking start time cannot be equal to booking end time");
+        }
         return post("", userId, requestDto);
     }
 
