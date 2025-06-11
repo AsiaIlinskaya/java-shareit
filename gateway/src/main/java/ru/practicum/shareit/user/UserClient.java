@@ -42,7 +42,7 @@ public class UserClient extends BaseClient {
         return get("/" + userId);
     }
 
-    public ResponseEntity<Object> updateUser(Long userId,@Valid UserDto userDto) {
+    public ResponseEntity<Object> updateUser(Long userId, @Valid UserDto userDto) {
         return patch("/" + userId, userDto);
     }
 
